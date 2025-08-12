@@ -1,10 +1,13 @@
 import Header from "../header/header";
+import ChatInput from "./chat";
+import MessageDisplay from "./MessageDisplay";
 
 const ChatPanel = () => {
     return (
-        <div className="w-100 p-6">
+        <div className="w-full h-screen flex flex-col p-6">
             <Header />
-            <h1 className="text-xl font-semibold mb-4 text-[#ffffffa2]">Chat Panel</h1>
+            <MessageDisplay />
+            <ChatInput />
         </div>
     );
 }
