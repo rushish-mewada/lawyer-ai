@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FC } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import Dashboard from "@/components/dashboard/dashboard";
+import Image from 'next/image';
 
-const LoadingSpinner = () => (
+const LoadingScreen = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-900">
-    <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-blue-500"></div>
+    <Image src="/loader.svg" alt="Loading..." width={60} height={60} className="animate-spin" />
   </div>
 );
 
@@ -22,7 +23,7 @@ export default function Home() {
       setAuthStatus(user ? 'authenticated' : 'unauthenticated');
     });
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
@@ -38,5 +39,5 @@ export default function Home() {
     );
   }
 
-  return <LoadingSpinner />;
+  return <LoadingScreen />;
 }

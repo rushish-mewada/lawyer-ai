@@ -51,7 +51,15 @@ export default function ChatInput() {
     const submit = () => {
         const text = plainText()
         if (!text && !files.length) return
-        dispatch(sendMessage({ text, files: files.map(f => f.file) }))
+
+        if (files.length > 0) {
+            files.forEach(f => {
+                dispatch(sendMessage({ text, file: f.file }))
+            })
+        } else {
+            dispatch(sendMessage({ text }))
+        }
+
         setContent('')
         inputRef.current && (inputRef.current.textContent = '')
         files.forEach(f => URL.revokeObjectURL(f.url))
