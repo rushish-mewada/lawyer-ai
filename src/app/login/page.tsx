@@ -3,12 +3,13 @@
 import { useState, FormEvent, FC, memo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { signInUser, signUpUser } from '@/utils/authService';
 import { Toaster, toast } from 'react-hot-toast';
 import Image from 'next/image';
 import "@/components/dashboard/dashboard.css";
+import apiHelper from '@/utils/apiHelper';
 
 const BlobBackground: FC = memo(() => (
     <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden" aria-hidden="true">
@@ -67,6 +68,29 @@ const AuthForm: FC<{ authType: 'login' | 'signup'; setAuthType: (type: 'login' |
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleSignupDataStorage = async (user: User) => {
+        try {
+            const idToken = await user.getIdToken();
+            await apiHelper('/api/userData', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    gender: formData.gender,
+                    country: formData.country,
+                },
+            });
+            toast.success('User data saved successfully!');
+        } catch (error) {
+            console.error('Error saving user data:', error);
+            toast.error(`Error saving user data: ${(error as Error).message}`);
+            throw error; // Re-throw to propagate error to handleSubmit catch block
+        }
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const { email, password, firstName, lastName, gender, country } = formData;
@@ -78,18 +102,26 @@ const AuthForm: FC<{ authType: 'login' | 'signup'; setAuthType: (type: 'login' |
 
         setIsLoading(true);
         try {
-            const authAction = isLogin ? signInUser(email, password) : signUpUser(email, password);
-            await authAction;
+            const userCredential = isLogin
+                ? await signInUser(email, password) // Login user for sign-in
+                : await signUpUser(email, password); // Sign up user for registration
+
+            if (!isLogin && userCredential?.user) {
+                // For signup, ensure additional data is stored AFTER initial Firebase registration
+                // This will throw an error if data storage fails, preventing redirection
+                await handleSignupDataStorage(userCredential.user);
+            }
+
+            // Show success toast only after all backend operations are successful
             toast.success(isLogin ? 'Login Successful!' : 'Registration Successful.');
+
+            // Redirect after a short delay to allow toast to be visible
             setTimeout(() => {
-                if (isLogin) {
-                    router.push('/');
-                } else {
-                    setAuthType('login');
-                    setIsLoading(false);
-                }
+                router.push('/'); // Redirect for both successful login AND successful signup with data storage
             }, 2000);
+
         } catch (error) {
+            // Catch any errors from authentication or data storage
             toast.error((error as Error).message);
             setIsLoading(false);
         }

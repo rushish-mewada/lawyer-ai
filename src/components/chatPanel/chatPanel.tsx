@@ -1,5 +1,5 @@
 import Header from "../header/header";
-import ChatInput from "./chat";
+import ChatInput from "./ChatInput";
 import MessageDisplay from "./MessageDisplay";
 
 const ChatPanel = () => {
