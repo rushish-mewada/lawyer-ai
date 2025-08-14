@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { RootState } from '@/lib/store';
 import { getAuth } from 'firebase/auth';
 import { app } from '@/lib/firebase';
+import apiHelper from '@/utils/apiHelper';
 
 interface GeminiMessageContent {
   main: string;
@@ -38,20 +39,19 @@ export const sendMessage = createAsyncThunk(
   'chat/sendMessage',
   async (payload: SendMessagePayload, { dispatch, getState }) => {
     const state = getState() as RootState;
-    let currentChatId = state.chat.currentChatId; // This will be null for a truly new chat session
+    let currentChatId = state.chat.currentChatId;
 
-    // Add user message to local state immediately
     let attachment;
     if (payload.file) {
       attachment = { url: URL.createObjectURL(payload.file), name: payload.file.name, type: payload.file.type };
     }
 
-    const userMessage: Message = { 
-      id: nanoid(), 
-      from: 'user', 
-      content: payload.text || (payload.file ? `Review file: ${payload.file.name}` : ''), 
-      attachment, 
-      timestamp: Date.now() 
+    const userMessage: Message = {
+      id: nanoid(),
+      from: 'user',
+      content: payload.text || (payload.file ? `Review file: ${payload.file.name}` : ''),
+      attachment,
+      timestamp: Date.now()
     };
     dispatch(addMessage(userMessage));
     dispatch(setIsLoading(true));
@@ -71,27 +71,18 @@ export const sendMessage = createAsyncThunk(
         parts: [{ text: typeof msg.content === 'string' ? msg.content : msg.content.main }],
       }));
 
-      const apiResponse = await fetch('/api/processMessage', {
+      const data = await apiHelper<{ text: string, chatId?: string }>('/api/processMessage', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
+        headers: {
           'Authorization': `Bearer ${idToken}`,
         },
-        body: JSON.stringify({
+        body: {
           text: payload.text,
           history: historyForAI,
-          chatId: currentChatId, // Send currentChatId (can be null or existing title)
-        }),
+          chatId: currentChatId,
+        },
       });
 
-      if (!apiResponse.ok) {
-        const errorData = await apiResponse.json();
-        errorMessage = `Error: ${errorData.message || apiResponse.statusText}`;
-        throw new Error(errorMessage);
-      }
-
-      const data = await apiResponse.json();
-      
       const disclaimerText = "This communication is for informational purposes only, does not constitute legal advice, and does not create an attorney-client relationship. LawBot is an AI and may produce inaccurate information.";
       const geminiResponse: Message = {
         id: nanoid(),
@@ -104,7 +95,6 @@ export const sendMessage = createAsyncThunk(
       };
       dispatch(addMessage(geminiResponse));
 
-      // IMPORTANT: Update currentChatId with the generated title from the backend if it's new
       if (data.chatId && data.chatId !== currentChatId) {
         dispatch(setCurrentChatId(data.chatId));
       }

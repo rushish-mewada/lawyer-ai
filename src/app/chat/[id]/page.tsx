@@ -1,8 +1,8 @@
-import ChatPanel from "../chatPanel/chatPanel";
-import Sidebar from "../sidebar/sidebar";
-import './dashboard.css';
+import ChatPanel from "@/components/chatPanel/chatPanel";
+import Sidebar from "@/components/sidebar/sidebar";
+import './blobs.css';
 
-const Dashboard = () => {
+const Chats = () => {
     return (
         <div className="relative w-full h-screen">
             <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden">
@@ -19,4 +19,4 @@ const Dashboard = () => {
     );
 }
 
-export default Dashboard;
+export default Chats;

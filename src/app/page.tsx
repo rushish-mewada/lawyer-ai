@@ -4,7 +4,6 @@ import { useEffect, useState, FC } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import Dashboard from "@/components/dashboard/dashboard";
 import Image from 'next/image';
 
 const LoadingScreen = () => (
@@ -15,7 +14,7 @@ const LoadingScreen = () => (
 
 export default function Home() {
   const router = useRouter();
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [authStatus, setAuthStatus] = useState('loading');
 
   useEffect(() => {
     const auth = getAuth(app);
@@ -26,18 +25,13 @@ export default function Home() {
   }, [router]);
 
   useEffect(() => {
+    if (authStatus === 'authenticated') {
+      router.replace('/chat');
+    }
     if (authStatus === 'unauthenticated') {
       router.replace('/login');
     }
   }, [authStatus, router]);
-
-  if (authStatus === 'authenticated') {
-    return (
-      <main>
-        <Dashboard />
-      </main>
-    );
-  }
 
   return <LoadingScreen />;
 }
